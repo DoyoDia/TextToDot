@@ -1,3 +1,4 @@
+import gradio as gr
 from PIL import Image, ImageDraw, ImageFont
 import math
 
@@ -41,12 +42,42 @@ def text_to_circle(text, font_path, font_size, scale_factor=4, spacing_factor=1.
         # 粘贴字符图像到主图像
         image.paste(char_image, (int(x - scaled_font_size), int(y - scaled_font_size)), char_image)
     
-    # 保存图像
-    image.save('text_circle.png')
+    return image
 
-# 示例使用
-text = "开头你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好你好结尾"
-font_path = "SourceHanSansCN-VF.ttf"  # 替换为你的字体路径
-font_size = 20
+def generate_image(text, font_size, use_custom_font, font_file=None):
+    if not text.strip():
+        raise gr.Error("警告：文本输入不能为空！")
+    
+    if use_custom_font and font_file is not None:
+        font_path = font_file.name
+    else:
+        font_path = "SourceHanSansCN-VF.ttf"
+    
+    image = text_to_circle(text, font_path, font_size)
+    return image
 
-text_to_circle(text, font_path, font_size)
+def update_visibility(use_custom_font):
+    return gr.update(visible=use_custom_font)
+
+with gr.Blocks() as iface:
+    text_input = gr.Textbox(lines=2, placeholder="输入文本...")
+    font_size_slider = gr.Slider(minimum=6, maximum=100, value=15, step=1, label="字体大小")  # step=1 字号必须是整数
+    use_custom_font_checkbox = gr.Checkbox(label="使用自定义字体")
+    font_file_input = gr.File(label="上传字体文件", visible=False)
+    
+    use_custom_font_checkbox.change(
+        fn=update_visibility,
+        inputs=use_custom_font_checkbox,
+        outputs=font_file_input
+    )
+    
+    generate_button = gr.Button("生成图像")
+    output_image = gr.Image()
+    
+    generate_button.click(
+        fn=generate_image,
+        inputs=[text_input, font_size_slider, use_custom_font_checkbox, font_file_input],
+        outputs=output_image
+    )
+
+iface.launch()
